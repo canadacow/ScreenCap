@@ -1,0 +1,45 @@
+# Build outputs
+out/
+build/
+*.exe
+/icon.png
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
+CMakeUserPresets.json
+
+# Visual Studio / MSBuild
+.vs/
+*.VC.db
+*.VC.VC.opendb
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.pch
+*.pdb
+*.idb
+*.ipch
+*.obj
+*.tlog
+*.log
+*.ilk
+*.iobj
+*.ipdb
+*.exp
+*.lib
+
+# MSVC/VS generated directories
+Debug/
+Release/
+x64/
+x86/
+Win32/
+
+# vcpkg (if checked out locally)
+vcpkg_installed/
+

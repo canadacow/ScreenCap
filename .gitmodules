@@ -1,0 +1,6 @@
+[submodule "external/vcpkg"]
+	path = external/vcpkg
+	url = https://github.com/microsoft/vcpkg
+[submodule "third-party/nativefiledialog"]
+	path = third-party/nativefiledialog
+	url = https://github.com/mlabbe/nativefiledialog.git

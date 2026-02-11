@@ -1,0 +1,2 @@
+// Application icon — ID 1 is the default Windows uses for the executable.
+1 ICON "app.ico"

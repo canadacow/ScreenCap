@@ -1,0 +1,8 @@
+{
+  "name": "screencap",
+  "version-string": "0.1.0",
+  "description": "Windows-only screen capture app scaffold",
+  "homepage": "https://example.invalid/screencap",
+  "dependencies": []
+}
+
