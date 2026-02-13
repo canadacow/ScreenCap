@@ -1,0 +1,144 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: write          # needed for gh release create
+  id-token: write          # needed for SignPath trusted build
+  actions: read            # needed for SignPath artifact verification
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # --- Build -----------------------------------------------------------
+
+      - name: Configure CMake
+        run: cmake --preset vs2022-x64
+
+      - name: Build
+        run: cmake --build out/build/vs2022-x64 --config RelWithDebInfo
+
+      # --- Installer -------------------------------------------------------
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" installer\ScreenCap.iss
+
+      # --- Upload unsigned artifact ----------------------------------------
+
+      - name: Upload unsigned installer
+        id: upload-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenCapSetup-unsigned
+          path: installer/Output/ScreenCapSetup.exe
+
+      # --- Upload raw exe for convenience ----------------------------------
+
+      - name: Upload raw exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenCap-exe
+          path: out/build/vs2022-x64/RelWithDebInfo/ScreenCap.exe
+
+  # ── SignPath code-signing (only runs when secrets are configured) ───────
+
+  sign:
+    needs: build
+    runs-on: windows-latest
+    if: >-
+      github.event_name == 'push'
+      && startsWith(github.ref, 'refs/tags/v')
+      && vars.SIGNPATH_ORGANIZATION_ID != ''
+
+    steps:
+      - name: Download unsigned installer
+        uses: actions/download-artifact@v4
+        with:
+          name: ScreenCapSetup-unsigned
+          path: unsigned
+
+      - name: Re-upload for SignPath
+        id: upload-for-signing
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenCapSetup-to-sign
+          path: unsigned/ScreenCapSetup.exe
+
+      - name: Submit signing request
+        id: signing
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.upload-for-signing.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+          wait-for-completion-timeout-in-seconds: 600
+
+      - name: Upload signed installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenCapSetup-signed
+          path: signed/ScreenCapSetup.exe
+
+  # ── GitHub Release (on version tags) ────────────────────────────────────
+
+  release:
+    needs: [build, sign]
+    # Run even if signing was skipped (unsigned release is still useful)
+    if: >-
+      always()
+      && github.event_name == 'push'
+      && startsWith(github.ref, 'refs/tags/v')
+      && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      # Try to download the signed artifact first; fall back to unsigned
+      - name: Download signed installer
+        id: download-signed
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: ScreenCapSetup-signed
+          path: release
+
+      - name: Download unsigned installer (fallback)
+        if: steps.download-signed.outcome != 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: ScreenCapSetup-unsigned
+          path: release
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          SIGNED=""
+          if [ "${{ steps.download-signed.outcome }}" = "success" ]; then
+            SIGNED=" (signed)"
+          fi
+          gh release create "$TAG" release/ScreenCapSetup.exe \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "ScreenCap $TAG" \
+            --notes "HDR-aware screen capture for Windows.${SIGNED}" \
+            --generate-notes
