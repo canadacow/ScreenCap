@@ -33,6 +33,16 @@ cmake --build --preset vs2022-x64 --config RelWithDebInfo
 
 Or open the folder in Visual Studio 2022 and select the **vs2022-x64** preset.
 
+## Installer
+
+Requires [Inno Setup 6](https://jrsoftware.org/isinfo.php). After building:
+
+```bat
+"C:\Program Files (x86)\Inno Setup 6\iscc.exe" installer\ScreenCap.iss
+```
+
+Produces `installer\Output\ScreenCapSetup.exe`. The installer optionally registers ScreenCap to launch on Windows startup.
+
 ## License
 
 MIT-0. See [LICENSE](LICENSE).

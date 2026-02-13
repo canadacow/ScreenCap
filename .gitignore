@@ -3,6 +3,7 @@ out/
 build/
 *.exe
 /icon.png
+installer/Output/
 
 # CMake
 CMakeFiles/
