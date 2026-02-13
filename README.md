@@ -1,8 +1,12 @@
 # ScreenCap
 
-A Windows screen capture tool that correctly captures HDR monitors.
+Screen capture on Windows has been broken for HDR monitors since HDR was introduced. Snipping Tool, Game Bar, or ShareX, they all capture HDR wrong. They read the framebuffer as if it were SDR, misinterpreting the scRGB pixel data entirely. The result is that Chrome, YouTube, and any other HDR-aware windows come out washed out and overexposed. The only workaround has been switching your desktop back to SDR before taking a screenshot. No third-party software does this right either. It's a bug that has persisted for years.
 
-Windows Snipping Tool, ShareX, and everything else either clip HDR content to SDR at capture time or produce washed-out results. ScreenCap captures the full scRGB FP16 framebuffer via Desktop Duplication and tone-maps to SDR PNG on output, preserving what you actually see on screen.
+ScreenCap reads the framebuffer correctly. It captures the scRGB FP16 data via Desktop Duplication and tone-maps it properly to SDR PNG, so what you see on screen is what you get in the file.
+
+| ScreenCap (correct) | Snipping Tool on HDR (overexposed) |
+|---|---|
+| <img src="docs/correct.png" width="400"> | <img src="docs/overexposed.png" width="400"> |
 
 ## Features
 
